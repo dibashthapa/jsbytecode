@@ -1,4 +1,5 @@
-use std::{io::{self, stdout, Write}};
+use core::panic;
+use std::{io::{self, stdout, Write, Error, Read}, env, fs::{File, self}, fmt::format, thread::panicking};
 mod scanner;
 mod token;
 mod token_type;
@@ -35,6 +36,19 @@ fn run_prompt() {
     }
 }
 
+fn run_file(file_name: String) {
+    let file_path = format!("examples/{}", file_name);
+    let contents = fs::read_to_string(file_path)
+    .expect("Should have been able to read the file");
+
+    match run(contents){
+        Ok(()) => {},
+        Err(e) => {
+            e.report("".to_string())
+        }
+    }
+}
+
 fn run(source: String) -> Result<(), LoxError> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
@@ -46,5 +60,11 @@ fn run(source: String) -> Result<(), LoxError> {
 }
 
 fn main() {
-    run_prompt();
+    let args: Vec<String> = env::args().collect();
+    if args.len() <= 1{
+        run_prompt();
+    } else {
+        let file_name = &args[1];
+        run_file(file_name.to_string());
+    }
 }
