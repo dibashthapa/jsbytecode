@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
-use crate::error::{LoxError};
+use crate::error::LoxError;
 use crate::token::Token;
 use crate::token_type::TokenType;
 use crate::value::Value;
@@ -59,7 +59,7 @@ impl Scanner {
     }
 
     pub fn scan_token(&mut self) {
-        let c= self.advance();
+        let c = self.advance();
         match c {
             '(' => self.add_token(TokenType::LeftParen),
             ')' => self.add_token(TokenType::RightParen),
@@ -113,7 +113,7 @@ impl Scanner {
             '"' => self.add_string(),
             ('0'..='9') => self.add_number(),
             ('a'..='z') | ('A'..='Z') | '_' => self.add_identifier(),
-            _ => LoxError::error(self.line, "Unexpected character.")
+            _ => LoxError::error(self.line, "Unexpected character."),
         }
     }
 
@@ -160,7 +160,10 @@ impl Scanner {
 
         let number = self.source[self.start..self.current].to_string();
 
-        self.add_token_with_value(TokenType::Number, Some(Value::Number(number.parse::<f64>().unwrap())));
+        self.add_token_with_value(
+            TokenType::Number,
+            Some(Value::Number(number.parse::<f64>().unwrap())),
+        );
     }
 
     fn peek_next(&self) -> char {
@@ -222,11 +225,10 @@ impl Scanner {
         self.source.chars().nth(self.current).unwrap()
     }
 
-    fn add_token_with_value(&mut self, type_: TokenType, literal: Option<Value>){
+    fn add_token_with_value(&mut self, type_: TokenType, literal: Option<Value>) {
         let text = self.source.get(self.start..self.current).unwrap();
         let token = Token::new(type_, text, literal, self.line);
         self.tokens.push(token);
-
     }
 
     fn add_token(&mut self, type_: TokenType) {

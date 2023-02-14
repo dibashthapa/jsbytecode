@@ -1,15 +1,17 @@
-use core::panic;
-use std::{io::{self, stdout, Write, Error, Read}, env, fs::{File, self}, fmt::format, thread::panicking};
+use std::{
+    env,
+    fs::{self},
+    io::{self, stdout, Write},
+};
+mod error;
 mod scanner;
 mod token;
 mod token_type;
 mod value;
-mod tools;
-mod error;
-use error::LoxError;
+mod expr;
+mod ast_printer;
 use crate::scanner::Scanner;
-
-
+use error::LoxError;
 
 fn run_prompt() {
     let stdin = io::stdin();
@@ -22,7 +24,7 @@ fn run_prompt() {
                 break;
             }
             match run(line) {
-                Ok(()) => {},
+                Ok(()) => {}
                 Err(m) => {
                     m.report("".to_string());
                 }
@@ -38,14 +40,11 @@ fn run_prompt() {
 
 fn run_file(file_name: String) {
     let file_path = format!("examples/{}", file_name);
-    let contents = fs::read_to_string(file_path)
-    .expect("Should have been able to read the file");
+    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
 
-    match run(contents){
-        Ok(()) => {},
-        Err(e) => {
-            e.report("".to_string())
-        }
+    match run(contents) {
+        Ok(()) => {}
+        Err(e) => e.report("".to_string()),
     }
 }
 
@@ -61,7 +60,7 @@ fn run(source: String) -> Result<(), LoxError> {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() <= 1{
+    if args.len() <= 1 {
         run_prompt();
     } else {
         let file_name = &args[1];
