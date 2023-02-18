@@ -10,6 +10,7 @@ mod token_type;
 mod value;
 mod expr;
 mod ast_printer;
+mod parser;
 use crate::scanner::Scanner;
 use error::LoxError;
 

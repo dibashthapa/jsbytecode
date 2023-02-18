@@ -4,7 +4,7 @@ use crate::{token_type::TokenType, value::Value};
 pub struct Token {
     type_: TokenType,
     lexeme: String,
-    literal: Option<Value>,
+    pub literal: Option<Value>,
     line: usize,
 }
 
