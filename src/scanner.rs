@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
-use crate::error::LoxError;
+use crate::error::{Error, LoxErrors, LoxResult};
 use crate::token::Token;
 use crate::token_type::TokenType;
 use crate::value::Value;
@@ -113,7 +113,8 @@ impl Scanner {
             '"' => self.add_string(),
             ('0'..='9') => self.add_number(),
             ('a'..='z') | ('A'..='Z') | '_' => self.add_identifier(),
-            _ => LoxError::error(self.line, "Unexpected character."),
+            _ => LoxErrors::ParseError(Error::new(self.line, "Unterminated string".to_string()))
+                .report(),
         }
     }
 
@@ -183,7 +184,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            LoxError::error(self.line, "Unterminated string.");
+            LoxErrors::ParseError(Error::new(self.line, "Unterminated string.".to_string()));
         }
 
         self.advance();
@@ -195,7 +196,7 @@ impl Scanner {
         if let Some(value) = value {
             self.add_token_with_value(TokenType::String, Some(Value::String(value)));
         } else {
-            LoxError::error(self.line, "Invalid string slice.");
+            LoxErrors::ParseError(Error::new(self.line, "Invalid string slice".to_string()));
         }
     }
 

@@ -2,10 +2,10 @@ use crate::{token_type::TokenType, value::Value};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
-    type_: TokenType,
-    lexeme: String,
+    pub type_: TokenType,
+    pub lexeme: String,
     pub literal: Option<Value>,
-    line: usize,
+    pub line: usize,
 }
 
 impl Token {
@@ -16,21 +16,5 @@ impl Token {
             literal,
             line,
         }
-    }
-
-    pub fn type_(&self) -> String {
-        self.type_.to_string()
-    }
-
-    pub fn lexeme(&self) -> &str {
-        &self.lexeme
-    }
-
-    pub fn literal(&self) -> &Option<Value> {
-        &self.literal
-    }
-
-    pub fn line(&self) -> usize {
-        self.line
     }
 }

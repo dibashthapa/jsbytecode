@@ -3,16 +3,16 @@ use std::{
     fs::{self},
     io::{self, stdout, Write},
 };
+mod ast_printer;
 mod error;
+mod expr;
+mod parser;
 mod scanner;
 mod token;
 mod token_type;
 mod value;
-mod expr;
-mod ast_printer;
-mod parser;
 use crate::scanner::Scanner;
-use error::LoxError;
+use error::LoxResult;
 
 fn run_prompt() {
     let stdin = io::stdin();
@@ -27,7 +27,7 @@ fn run_prompt() {
             match run(line) {
                 Ok(()) => {}
                 Err(m) => {
-                    m.report("".to_string());
+                    m.report();
                 }
             }
         } else {
@@ -45,11 +45,11 @@ fn run_file(file_name: String) {
 
     match run(contents) {
         Ok(()) => {}
-        Err(e) => e.report("".to_string()),
+        Err(e) => e.report(),
     }
 }
 
-fn run(source: String) -> Result<(), LoxError> {
+fn run(source: String) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 

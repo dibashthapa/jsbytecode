@@ -6,8 +6,8 @@ impl AstPrinter {
     fn print(&mut self, expr: &Expr) -> String {
         expr.accept(self)
     }
-    fn parenthesize(&mut self, name:String, exprs: &[Expr]) -> String {
-        let  mut builder = String::new();
+    fn parenthesize(&mut self, name: String, exprs: &[Expr]) -> String {
+        let mut builder = String::new();
         builder.push('(');
         builder.push_str(&name);
 
@@ -37,7 +37,4 @@ impl ExprVisitor<String> for AstPrinter {
     fn visit_literal_expr(&mut self, expr: &crate::expr::LiteralExpr) -> String {
         todo!()
     }
-    
 }
-
-
