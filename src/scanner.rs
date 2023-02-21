@@ -36,7 +36,6 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
-
 }
 impl Scanner {
     pub fn new(source: String) -> Self {

@@ -59,10 +59,8 @@ fn run(source: String) -> LoxResult<()> {
     let expression = parser.parse();
 
     match expression {
-        None => {
-            println!("Error occured");
-        },
-        Some(expr) =>  {
+        None => {}
+        Some(expr) => {
             let mut ast_printer = AstPrinter::new();
             let result = ast_printer.print(&expr);
             println!("{}", result);

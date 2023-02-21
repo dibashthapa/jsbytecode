@@ -1,4 +1,4 @@
-use crate::expr::{Expr, ExprVisitor, BinaryExpr, GroupingExpr, UnaryExpr, LiteralExpr};
+use crate::expr::{BinaryExpr, Expr, ExprVisitor, GroupingExpr, LiteralExpr, UnaryExpr};
 
 pub struct AstPrinter;
 
@@ -10,7 +10,7 @@ impl AstPrinter {
         expr.accept(self)
     }
 
- fn parenthesize(&mut self, name: String, exprs: &[&Box<Expr>]) -> String {
+    fn parenthesize(&mut self, name: String, exprs: &[&Box<Expr>]) -> String {
         let mut builder = String::new();
         builder.push('(');
         builder.push_str(&name);
@@ -40,4 +40,5 @@ impl ExprVisitor<String> for AstPrinter {
 
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> String {
         expr.value.as_ref().unwrap().to_string()
-    }}
+    }
+}
