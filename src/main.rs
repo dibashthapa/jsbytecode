@@ -56,11 +56,18 @@ fn run(source: String) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
     let mut tokens = scanner.scan_tokens();
     let mut parser = Parser::new(&mut tokens);
-    let expression = parser.parse().unwrap();
-    let mut ast_printer = AstPrinter::new();
+    let expression = parser.parse();
 
-    let result = ast_printer.print(&expression);
-    println!("{}", result);
+    match expression {
+        None => {
+            println!("Error occured");
+        },
+        Some(expr) =>  {
+            let mut ast_printer = AstPrinter::new();
+            let result = ast_printer.print(&expr);
+            println!("{}", result);
+        }
+    }
     Ok(())
 }
 

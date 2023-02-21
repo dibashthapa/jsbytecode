@@ -17,4 +17,8 @@ impl Token {
             line,
         }
     }
+
+    pub fn eof(line: usize) -> Token {
+        Token { type_: TokenType::EOF, lexeme: "".to_string(), literal: None, line}
+    }
 }

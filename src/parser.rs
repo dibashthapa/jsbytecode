@@ -38,7 +38,6 @@ impl<'a> Parser<'a> {
     }
 
     fn advance(&mut self) -> &Token {
-        println!("Current line is {}", self.current);
         if !self.is_at_end() {
             self.current += 1;
         }
@@ -110,13 +109,11 @@ impl<'a> ParseExpr for Parser<'a> {
             }))
         } else if self.match_token(&[LeftParen]) {
             let expr = self.expression()?;
-            {
-                match self.consume(RightParen, "Expect ')' after expression.") {
-                    Ok(_) => Ok(Expr::Grouping(GroupingExpr {
-                        expression: Box::new(expr),
-                    })),
-                    Err(e) => Err(e),
-                }
+            match self.consume(RightParen, "Expect ')' after expression.") {
+                Ok(_) => Ok(Expr::Grouping(GroupingExpr {
+                    expression: Box::new(expr),
+                })),
+                Err(e) => Err(e),
             }
         } else {
             Err(LoxErrors::ParseError(Error::new(

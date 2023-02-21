@@ -36,8 +36,8 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
-}
 
+}
 impl Scanner {
     pub fn new(source: String) -> Self {
         Self {
@@ -54,6 +54,8 @@ impl Scanner {
             self.start = self.current;
             self.scan_token();
         }
+
+        self.tokens.push(Token::eof(self.line));
 
         self.tokens.to_vec()
     }
