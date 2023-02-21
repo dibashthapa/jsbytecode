@@ -1,9 +1,12 @@
 use crate::expr::{Expr, ExprVisitor};
 
-struct AstPrinter;
+pub struct AstPrinter;
 
 impl AstPrinter {
-    fn print(&mut self, expr: &Expr) -> String {
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn print(&mut self, expr: &Expr) -> String {
         expr.accept(self)
     }
     fn parenthesize(&mut self, name: String, exprs: &[Expr]) -> String {

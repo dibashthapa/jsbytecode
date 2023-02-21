@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Boolean(bool),
     Nil,
@@ -19,14 +19,14 @@ impl fmt::Display for Value {
     }
 }
 
-impl PartialEq for Value {
-    fn eq(&self, other: &Value) -> bool {
-        match (self, other) {
-            (Value::Boolean(s), Value::Boolean(o)) => s == o,
-            (Value::Nil, Value::Nil) => true,
-            (Value::Number(s), Value::Number(o)) => s == o,
-            (Value::String(s), Value::String(o)) => s == o,
-            _ => false,
-        }
-    }
-}
+// impl PartialEq for Value {
+//     fn eq(&self, other: &Value) -> bool {
+//         match (self, other) {
+//             (Value::Boolean(s), Value::Boolean(o)) => s == o,
+//             (Value::Nil, Value::Nil) => true,
+//             (Value::Number(s), Value::Number(o)) => s == o,
+//             (Value::String(s), Value::String(o)) => s == o,
+//             _ => false,
+//         }
+//     }
+// }

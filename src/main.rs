@@ -13,6 +13,9 @@ mod token_type;
 mod value;
 use crate::scanner::Scanner;
 use error::LoxResult;
+use parser::Parser;
+
+use ast_printer::AstPrinter;
 
 fn run_prompt() {
     let stdin = io::stdin();
@@ -51,11 +54,13 @@ fn run_file(file_name: String) {
 
 fn run(source: String) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
-    let tokens = scanner.scan_tokens();
+    let mut tokens = scanner.scan_tokens();
+    let mut parser = Parser::new(&mut tokens);
+    let expression = parser.parse().unwrap();
+    let mut ast_printer = AstPrinter::new();
 
-    for token in tokens {
-        println!("token is {:?}", token);
-    }
+    let result = ast_printer.print(&expression);
+    println!("{}", result);
     Ok(())
 }
 
