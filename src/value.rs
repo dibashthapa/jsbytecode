@@ -1,5 +1,7 @@
 use std::fmt::{self, Debug};
 
+use crate::error::{Error, LoxErrors};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Boolean(bool),
@@ -19,14 +21,15 @@ impl fmt::Display for Value {
     }
 }
 
-// impl PartialEq for Value {
-//     fn eq(&self, other: &Value) -> bool {
-//         match (self, other) {
-//             (Value::Boolean(s), Value::Boolean(o)) => s == o,
-//             (Value::Nil, Value::Nil) => true,
-//             (Value::Number(s), Value::Number(o)) => s == o,
-//             (Value::String(s), Value::String(o)) => s == o,
-//             _ => false,
-//         }
-//     }
-// }
+impl TryInto<f64> for Value {
+    type Error = LoxErrors;
+    fn try_into(self) -> Result<f64, Self::Error> {
+        match self {
+            Value::Number(number) => Ok(number),
+            _ => Err(LoxErrors::RunTimeException(Error::new(
+                0,
+                "Cannot convert number to string".to_string(),
+            ))),
+        }
+    }
+}

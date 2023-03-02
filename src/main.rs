@@ -6,12 +6,14 @@ use std::{
 mod ast_printer;
 mod error;
 mod expr;
+mod intrepreter;
 mod parser;
 mod scanner;
 mod token;
 mod token_type;
 mod value;
 use crate::scanner::Scanner;
+use crate::intrepreter::Intrepreter;
 use error::LoxResult;
 use parser::Parser;
 
@@ -54,6 +56,7 @@ fn run_file(file_name: String) {
 
 fn run(source: String) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
+    let mut intrepreter = Intrepreter::new();
     let mut tokens = scanner.scan_tokens();
     let mut parser = Parser::new(&mut tokens);
     let expression = parser.parse();
@@ -61,9 +64,10 @@ fn run(source: String) -> LoxResult<()> {
     match expression {
         None => {}
         Some(expr) => {
-            let mut ast_printer = AstPrinter::new();
-            let result = ast_printer.print(&expr);
-            println!("{}", result);
+            // let mut ast_printer = AstPrinter::new();
+            // let result = ast_printer.print(&expr);
+            intrepreter.intrepret(&expr)?;
+            // println!("{}", result);
         }
     }
     Ok(())
