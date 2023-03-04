@@ -3,7 +3,7 @@ use crate::{
     expr::{BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr},
     token::Token,
     token_type::TokenType::{self, *},
-    value::Value,
+    value::Value, stmt::{Stmt, PrintStmt, ExpressionStmt},
 };
 
 pub trait ParseExpr {
@@ -61,11 +61,42 @@ impl<'a> Parser<'a> {
         self.peek().type_ == TokenType::EOF
     }
 
-    pub fn parse(&mut self) -> Option<Expr> {
-        match self.expression() {
-            Ok(exp) => Some(exp),
-            Err(_) => None,
+    fn statement(&mut self) -> LoxResult<Stmt> {
+        if self.match_token(&[Print]) {
+            println!("matched print token");
+            self.print_statement()?;
+        } 
+
+        self.expression_statement()
+    }
+
+    fn expression_statement(&mut self) -> LoxResult<Stmt> {
+        let expr = self.expression()?;
+        self.consume(Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Expression(ExpressionStmt { expression: expr}))
+    }
+
+  //   private Stmt expressionStatement() {
+  //   Expr expr = expression();
+  //   consume(SEMICOLON, "Expect ';' after expression.");
+  //   return new Stmt.Expression(expr);
+  // }
+    fn print_statement(&mut self) -> LoxResult<Stmt> {
+        let value = self.expression()?;
+        self.consume(Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print(PrintStmt { expression: value} ))
+    }
+
+    pub fn parse(&mut self) ->  LoxResult<Vec<Stmt>> {
+        let mut statements = vec![];
+        while !self.is_at_end() {
+            statements.push(self.statement()?)
         }
+        Ok(statements)
+        // match self.expression() {
+        //     Ok(exp) => Some(exp),
+        //     Err(_) => None,
+        // }
     }
 
     fn peek(&self) -> &Token {
@@ -92,29 +123,31 @@ impl<'a> ParseExpr for Parser<'a> {
 
     fn primary(&mut self) -> LoxResult<Expr> {
         if self.match_token(&[False]) {
-            Ok(Expr::Literal(LiteralExpr {
+            return Ok(Expr::Literal(LiteralExpr {
                 value: Some(Value::Boolean(false)),
-            }))
-        } else if self.match_token(&[True]) {
-            Ok(Expr::Literal(LiteralExpr {
+            }));
+        } 
+        if self.match_token(&[True]) {
+            return Ok(Expr::Literal(LiteralExpr {
                 value: Some(Value::Boolean(true)),
-            }))
-        } else if self.match_token(&[Nil]) {
-            Ok(Expr::Literal(LiteralExpr {
+            }));
+        }  
+        if self.match_token(&[Nil]) {
+            return Ok(Expr::Literal(LiteralExpr {
                 value: Some(Value::Nil),
-            }))
-        } else if self.match_token(&[Number, TokenType::String]) {
-            Ok(Expr::Literal(LiteralExpr {
+            }));
+        } 
+        if self.match_token(&[Number, TokenType::String]) {
+            return Ok(Expr::Literal(LiteralExpr {
                 value: self.previous().literal.to_owned(),
-            }))
-        } else if self.match_token(&[LeftParen]) {
+            }));
+        } 
+        if self.match_token(&[LeftParen]) {
             let expr = self.expression()?;
-            match self.consume(RightParen, "Expect ')' after expression.") {
-                Ok(_) => Ok(Expr::Grouping(GroupingExpr {
+            self.consume(RightParen, "Expect ')' after expression")?;
+            return Ok(Expr::Grouping(GroupingExpr {
                     expression: Box::new(expr),
-                })),
-                Err(e) => Err(e),
-            }
+            }));
         } else {
             Err(LoxErrors::ParseError(Error::new(
                 self.peek().line,
@@ -205,6 +238,6 @@ impl<'a> ParseExpr for Parser<'a> {
             }));
         }
 
-        return self.primary();
+        self.primary()
     }
 }

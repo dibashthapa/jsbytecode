@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
-use crate::error::{Error, LoxErrors, LoxResult};
+use crate::error::{Error, LoxErrors};
 use crate::token::Token;
 use crate::token_type::TokenType;
 use crate::value::Value;

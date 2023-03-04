@@ -1,6 +1,7 @@
 use crate::token::Token;
 use crate::value::Value;
 
+#[derive(Debug)]
 pub enum Expr {
     Binary(BinaryExpr),
     Grouping(GroupingExpr),
@@ -26,21 +27,26 @@ pub trait ExprVisitor<T> {
     fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> T;
 }
 
+#[derive(Debug)]
 pub struct BinaryExpr {
     pub left: Box<Expr>,
     pub operator: Token,
     pub right: Box<Expr>,
 }
 
+#[derive(Debug)]
 pub struct GroupingExpr {
     pub expression: Box<Expr>,
 }
 
+#[derive(Debug)]
 pub struct LiteralExpr {
     pub value: Option<Value>,
 }
 
+#[derive(Debug)]
 pub struct UnaryExpr {
     pub operator: Token,
     pub right: Box<Expr>,
 }
+
