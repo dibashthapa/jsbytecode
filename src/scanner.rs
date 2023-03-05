@@ -120,7 +120,7 @@ impl Scanner {
     }
 
     fn add_identifier(&mut self) {
-        while self.is_alpha_numeric(self.peek()) {
+        while self.peek().is_alphanumeric() || self.peek() == '_' {
             self.advance();
         }
 
@@ -134,17 +134,6 @@ impl Scanner {
         } else {
             self.add_token(TokenType::Identifier);
         }
-    }
-
-    fn is_alpha(&self, c: char) -> bool {
-        match c {
-            'a'..='z' | 'A'..='Z' | '_' => true,
-            _ => false,
-        }
-    }
-
-    fn is_alpha_numeric(&self, c: char) -> bool {
-        self.is_alpha(c) || self.is_digit(c)
     }
 
     fn add_number(&mut self) {

@@ -1,26 +1,21 @@
 use std::{
-    env,
-    fs,
+    env, fs,
     io::{self, stdout, Write},
 };
 
-mod stmt;
-mod ast_printer;
-mod error;
-mod expr;
-mod tools;
 mod ast;
+mod error;
 mod intrepreter;
 mod parser;
 mod scanner;
 mod token;
 mod token_type;
+mod tools;
 mod value;
-use crate::scanner::Scanner;
 use crate::intrepreter::Intrepreter;
+use crate::scanner::Scanner;
 use error::LoxResult;
 use parser::Parser;
-
 
 fn run_prompt() {
     let stdin = io::stdin();
@@ -64,16 +59,6 @@ fn run(source: String) -> LoxResult<()> {
     let mut parser = Parser::new(&mut tokens);
     let statements = parser.parse()?;
     intrepreter.intrepret(&statements)?;
-    //
-    // match statements{
-    //     None => {}
-    //     Some(expr) => {
-    //         // let mut ast_printer = AstPrinter::new();
-    //         // let result = ast_printer.print(&expr);
-    //         intrepreter.intrepret(&expr)?;
-    //         // println!("{}", result);
-    //     }
-    // }
     Ok(())
 }
 
