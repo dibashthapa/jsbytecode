@@ -142,15 +142,23 @@ impl VisitorExpr for Intrepreter {
     }
 }
 
+// program        → statement* EOF ;
+// statement      → exprStmt
+//                | printStmt ;
+// exprStmt       → expression ";" ;
+// printStmt      → "print" expression ";" ;
+
 impl VisitorStmt for Intrepreter {
     type Result = LoxResult<()>;
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Self::Result {
-        self.evaluate(&stmt.expression)?.unwrap();
+        let value = self.evaluate(&stmt.expression)?.unwrap();
+        println!("{value}");
         Ok(())
     }
 
-    fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> LoxResult<()> {
+    fn visit_print_stmt(&mut self, stmt: &PrintStmt) -> Self::Result {
         let value = self.evaluate(&stmt.expression)?.unwrap();
+        println!("{value}");
         Ok(())
     }
 }
@@ -164,6 +172,7 @@ mod tests {
             value: Some(Value::Number(num)),
         }))
     }
+
 
     #[test]
     fn test_unary_minus() {

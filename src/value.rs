@@ -32,6 +32,7 @@ impl Add for Value {
     fn add(self, other: Self) -> Self {
         match (self, other) {
             (Self::Number(left), Self::Number(right)) => Self::Number(left + right),
+            (Self::String(left), Self::String(right)) => Self::String(format!("{left}{right}")),
             _ => Self::ArithmeticError,
         }
     }

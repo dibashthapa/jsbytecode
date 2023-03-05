@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
 
     fn statement(&mut self) -> LoxResult<Stmt> {
         if self.match_token(&[Print]) {
-            self.print_statement()?;
+            return self.print_statement()
         }
 
         self.expression_statement()
