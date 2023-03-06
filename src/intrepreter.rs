@@ -1,6 +1,9 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::ast::{
-    AssignExpr, BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt,
-    UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
+    AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt,
+    Stmt, UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
 };
 use crate::environment::Environment;
 use crate::error::{Error, LoxErrors, LoxResult};
@@ -12,12 +15,15 @@ use crate::tools::*;
 use crate::value::Value;
 
 pub struct Intrepreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 type Literal = Option<Value>;
 
 impl Intrepreter {
+    fn new(environment: Rc<RefCell<Environment>>) -> Self {
+        Self { environment }
+    }
     fn evaluate(&mut self, expr: &Expr) -> LoxResult<Literal> {
         expr.accept(self)
     }
@@ -32,12 +38,24 @@ impl Intrepreter {
     fn execute(&mut self, stmt: &Stmt) -> LoxResult<()> {
         stmt.accept(self)
     }
+
+    fn execute_block(
+        &mut self,
+        statements: &[Stmt],
+        environment: Rc<RefCell<Environment>>,
+    ) -> LoxResult<()> {
+        let mut interpreter = Intrepreter::new(environment);
+        statements
+            .iter()
+            .try_for_each(|stmt| interpreter.execute(stmt))?;
+        Ok(())
+    }
 }
 
 impl Default for Intrepreter {
     fn default() -> Self {
         Self {
-            environment: Environment::default(),
+            environment: Rc::new(RefCell::new(Environment::default())),
         }
     }
 }
@@ -85,12 +103,14 @@ impl VisitorExpr for Intrepreter {
 
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Self::Result {
         let value = self.evaluate(&expr.value)?;
-        self.environment.assign(expr.name.clone(), value.clone())?;
+        self.environment
+            .borrow_mut()
+            .assign(expr.name.clone(), value.clone())?;
         Ok(value)
     }
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Self::Result {
-        self.environment.get(expr.name.clone())
+        self.environment.borrow_mut().get(expr.name.clone())
     }
 
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> Self::Result {
@@ -191,7 +211,17 @@ impl VisitorStmt for Intrepreter {
         if let Some(initializer) = &stmt.initializer {
             value = self.evaluate(&initializer)?;
         }
-        self.environment.define(stmt.name.lexeme.clone(), value);
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.lexeme.clone(), value);
+        Ok(())
+    }
+
+    fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Self::Result {
+        self.execute_block(
+            &stmt.statements,
+            self.environment.clone()
+        )?;
         Ok(())
     }
 }

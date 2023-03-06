@@ -51,6 +51,7 @@ define_ast!(
     AstStmt,
     VisitorStmt,
     Stmt,
+    [BlockStmt { statements: Vec<Stmt> }, visit_block_stmt],
     [ExpressionStmt { expression: Expr }, visit_expression_stmt],
     [PrintStmt { expression: Expr }, visit_print_stmt],
     [VarStmt { name: Token , initializer: Option<Expr> }, visit_var_stmt],

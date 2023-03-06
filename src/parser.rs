@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        AssignExpr, BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt,
-        UnaryExpr, VarStmt, VariableExpr,
+        AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, LiteralExpr,
+        PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,
@@ -69,8 +69,25 @@ impl<'a> Parser<'a> {
         if self.match_token(&[Print]) {
             return self.print_statement();
         }
+        if self.match_token(&[LeftBrace]) {
+            return Ok(Stmt::BlockStmt(BlockStmt {
+                statements: self.block()?,
+            }));
+        }
 
         self.expression_statement()
+    }
+
+    fn block(&mut self) -> LoxResult<Vec<Stmt>> {
+        let mut statements = vec![];
+
+        while !self.check(&RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration()?)
+        }
+
+        self.consume(RightBrace, "Expect'}' after block.")?;
+
+        Ok(statements)
     }
 
     fn expression_statement(&mut self) -> LoxResult<Stmt> {
