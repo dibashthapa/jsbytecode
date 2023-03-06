@@ -58,5 +58,4 @@ impl Environment {
         self.values.insert(name.lexeme, value);
         Ok(())
     }
-
 }

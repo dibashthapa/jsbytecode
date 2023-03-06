@@ -218,10 +218,7 @@ impl VisitorStmt for Intrepreter {
     }
 
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Self::Result {
-        self.execute_block(
-            &stmt.statements,
-            self.environment.clone()
-        )?;
+        self.execute_block(&stmt.statements, self.environment.clone())?;
         Ok(())
     }
 }
