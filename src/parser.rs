@@ -1,6 +1,7 @@
 use crate::{
     ast::{
         BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt, UnaryExpr,
+        VarStmt, VariableExpr,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,
@@ -65,7 +66,7 @@ impl<'a> Parser<'a> {
 
     fn statement(&mut self) -> LoxResult<Stmt> {
         if self.match_token(&[Print]) {
-            return self.print_statement()
+            return self.print_statement();
         }
 
         self.expression_statement()
@@ -86,9 +87,29 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> LoxResult<Vec<Stmt>> {
         let mut statements = vec![];
         while !self.is_at_end() {
-            statements.push(self.statement()?)
+            statements.push(self.declaration()?)
         }
         Ok(statements)
+    }
+
+    fn declaration(&mut self) -> LoxResult<Stmt> {
+        if self.match_token(&[Var]) {
+            return self.var_declaration();
+        }
+        self.statement()
+    }
+
+    fn var_declaration(&mut self) -> LoxResult<Stmt> {
+        let name = self.consume(Identifier, "Expect variable name")?.clone();
+        let mut initializer = None;
+
+        if self.match_token(&[Equal]) {
+            initializer = Some(self.expression()?);
+        }
+
+        self.consume(Semicolon, "Expect ; after variable declaration")?;
+
+        Ok(Stmt::VarStmt(VarStmt { initializer, name }))
     }
 
     fn peek(&self) -> &Token {
@@ -139,6 +160,12 @@ impl<'a> ParseExpr for Parser<'a> {
             self.consume(RightParen, "Expect ')' after expression")?;
             return Ok(Expr::GroupingExpr(GroupingExpr {
                 expression: Box::new(expr),
+            }));
+        }
+
+        if self.match_token(&[Identifier]) {
+            return Ok(Expr::VariableExpr(VariableExpr {
+                name: self.previous().to_owned(),
             }));
         } else {
             Err(LoxErrors::ParseError(Error::new(

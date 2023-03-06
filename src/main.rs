@@ -4,6 +4,7 @@ use std::{
 };
 
 mod ast;
+mod environment;
 mod error;
 mod intrepreter;
 mod parser;
@@ -19,6 +20,7 @@ use parser::Parser;
 
 fn run_prompt() {
     let stdin = io::stdin();
+    let mut intrepreter = Intrepreter::default();
     print!("> ");
     stdout().flush().unwrap();
 
@@ -27,7 +29,7 @@ fn run_prompt() {
             if line.is_empty() {
                 break;
             }
-            match run(line) {
+            match run(line, &mut intrepreter) {
                 Ok(()) => {}
                 Err(m) => {
                     m.report();
@@ -45,16 +47,16 @@ fn run_prompt() {
 fn run_file(file_name: String) {
     let file_path = format!("examples/{}", file_name);
     let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
+    let mut intrepreter = Intrepreter::default();
 
-    match run(contents) {
+    match run(contents, &mut intrepreter) {
         Ok(()) => {}
         Err(e) => e.report(),
     }
 }
 
-fn run(source: String) -> LoxResult<()> {
+fn run(source: String, intrepreter: &mut Intrepreter) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
-    let mut intrepreter = Intrepreter::new();
     let mut tokens = scanner.scan_tokens();
     let mut parser = Parser::new(&mut tokens);
     let statements = parser.parse()?;

@@ -1,21 +1,23 @@
-use crate::ast::{Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt, VisitorStmt, VisitorExpr, UnaryExpr, BinaryExpr};
+use crate::ast::{
+    BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt, UnaryExpr,
+    VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
+};
+use crate::environment::Environment;
 use crate::error::{Error, LoxErrors, LoxResult};
-use crate::tools::*;
 use crate::token::Token;
 use crate::token_type::TokenType::{
     Bang, BangEqual, EqualEqual, Greater, GreaterEqual, Less, LessEqual, Minus, Plus, Slash, Star,
 };
+use crate::tools::*;
 use crate::value::Value;
 
-pub struct Intrepreter;
+pub struct Intrepreter {
+    environment: Environment,
+}
 
 type Literal = Option<Value>;
 
 impl Intrepreter {
-    pub fn new() -> Self {
-        Self
-    }
-
     fn evaluate(&mut self, expr: &Expr) -> LoxResult<Literal> {
         expr.accept(self)
     }
@@ -29,6 +31,14 @@ impl Intrepreter {
 
     fn execute(&mut self, stmt: &Stmt) -> LoxResult<()> {
         stmt.accept(self)
+    }
+}
+
+impl Default for Intrepreter {
+    fn default() -> Self {
+        Self {
+            environment: Environment::default(),
+        }
     }
 }
 
@@ -72,6 +82,11 @@ fn check_number_operands(operator: &Token, left: &Value, right: &Value) -> LoxRe
 
 impl VisitorExpr for Intrepreter {
     type Result = LoxResult<Literal>;
+
+    fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Self::Result {
+        self.environment.get(expr.name.clone())
+    }
+
     fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> Self::Result {
         Ok(expr.value.to_owned())
     }
@@ -142,11 +157,13 @@ impl VisitorExpr for Intrepreter {
     }
 }
 
-// program        → statement* EOF ;
-// statement      → exprStmt
-//                | printStmt ;
-// exprStmt       → expression ";" ;
-// printStmt      → "print" expression ";" ;
+/*
+     program        → statement* EOF ;
+     statement      → exprStmt
+                    | printStmt ;
+     exprStmt       → expression ";" ;
+     printStmt      → "print" expression ";" ;
+*/
 
 impl VisitorStmt for Intrepreter {
     type Result = LoxResult<()>;
@@ -161,6 +178,16 @@ impl VisitorStmt for Intrepreter {
         println!("{value}");
         Ok(())
     }
+
+    fn visit_var_stmt(&mut self, stmt: &VarStmt) -> Self::Result {
+        let mut value = None;
+
+        if let Some(initializer) = &stmt.initializer {
+            value = self.evaluate(&initializer)?;
+        }
+        self.environment.define(stmt.name.lexeme.clone(), value);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -173,10 +200,9 @@ mod tests {
         }))
     }
 
-
     #[test]
     fn test_unary_minus() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let unary = UnaryExpr {
             operator: Token::new(Minus, "-", None, 1),
             right: make_literal_num(123.0),
@@ -189,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_unary_not() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let unary = UnaryExpr {
             operator: Token::new(Bang, "!", None, 1),
             right: Box::new(Expr::LiteralExpr(LiteralExpr {
@@ -203,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_binary_sub() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: Box::new(Expr::LiteralExpr(LiteralExpr {
                 value: Some(Value::Number(100.0)),
@@ -221,7 +247,7 @@ mod tests {
 
     #[test]
     fn test_binary_add() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: make_literal_num(100.0),
             operator: Token::new(Plus, "+", None, 1),
@@ -234,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_binary_mul() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: make_literal_num(10.0),
             operator: Token::new(Star, "*", None, 1),
@@ -247,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_binary_equals() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: make_literal_num(15.0),
             operator: Token::new(EqualEqual, "==", None, 1),
@@ -260,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_binary_div() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: make_literal_num(50.0),
             operator: Token::new(Slash, "/", None, 1),
@@ -273,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_binary_greater() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: make_literal_num(50.0),
             operator: Token::new(Greater, ">", None, 1),
@@ -286,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_binary_smaller() {
-        let mut terp = Intrepreter {};
+        let mut terp = Intrepreter::default();
         let binary_expr = BinaryExpr {
             left: make_literal_num(5.0),
             operator: Token::new(Less, "<", None, 1),
