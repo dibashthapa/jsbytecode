@@ -14,6 +14,13 @@ define_ast!(
         visit_binary_exp
     ],
     [
+        AssignExpr {
+            name: Token,
+            value: Box<Expr>
+        },
+        visit_assign_expr
+    ],
+    [
         GroupingExpr {
             expression: Box<Expr>
         },

@@ -1,6 +1,6 @@
 use crate::ast::{
-    BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt, UnaryExpr,
-    VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
+    AssignExpr, BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt,
+    UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
 };
 use crate::environment::Environment;
 use crate::error::{Error, LoxErrors, LoxResult};
@@ -82,6 +82,12 @@ fn check_number_operands(operator: &Token, left: &Value, right: &Value) -> LoxRe
 
 impl VisitorExpr for Intrepreter {
     type Result = LoxResult<Literal>;
+
+    fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Self::Result {
+        let value = self.evaluate(&expr.value)?;
+        self.environment.assign(expr.name.clone(), value.clone())?;
+        Ok(value)
+    }
 
     fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Self::Result {
         self.environment.get(expr.name.clone())

@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt, UnaryExpr,
-        VarStmt, VariableExpr,
+        AssignExpr, BinaryExpr, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt, Stmt,
+        UnaryExpr, VarStmt, VariableExpr,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,
@@ -12,6 +12,7 @@ use crate::{
 pub trait ParseExpr {
     fn expression(&mut self) -> LoxResult<Expr>;
     fn equality(&mut self) -> LoxResult<Expr>;
+    fn assignment(&mut self) -> LoxResult<Expr>;
     fn comparison(&mut self) -> LoxResult<Expr>;
     fn term(&mut self) -> LoxResult<Expr>;
     fn factor(&mut self) -> LoxResult<Expr>;
@@ -131,7 +132,28 @@ impl<'a> Parser<'a> {
 
 impl<'a> ParseExpr for Parser<'a> {
     fn expression(&mut self) -> LoxResult<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> LoxResult<Expr> {
+        let expr = self.equality()?;
+
+        if self.match_token(&[Equal]) {
+            let equals = self.previous().to_owned();
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::VariableExpr(VariableExpr { name }) => {
+                    return Ok(Expr::AssignExpr(AssignExpr {
+                        name,
+                        value: Box::new(value),
+                    }));
+                }
+                _ => return Err(self.error(&equals, "Invalid assignment target")),
+            }
+        }
+
+        Ok(expr)
     }
 
     fn primary(&mut self) -> LoxResult<Expr> {
