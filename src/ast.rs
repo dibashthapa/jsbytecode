@@ -1,6 +1,12 @@
 use crate::tools::{AstNode, AstStmt};
 use crate::{define_ast, token::Token, value::Value as LiteralEnum};
 
+// expression     → assignment ;
+// assignment     → IDENTIFIER "=" assignment
+//                | logic_or ;
+// logic_or       → logic_and ( "or" logic_and )* ;
+// logic_and      → equality ( "and" equality )* ;
+
 define_ast!(
     AstNode,
     VisitorExpr,
@@ -45,7 +51,23 @@ define_ast!(
         },
         visit_variable_expr
     ],
+    [
+        LogicalExpr {
+            left: Box<Expr>,
+            operator: Token,
+            right: Box<Expr>
+        },
+        visit_logical_expr
+    ],
 );
+
+// statement      → exprStmt
+//                | ifStmt
+//                | printStmt
+//                | block ;
+//
+// ifStmt         → "if" "(" expression ")" statement
+//                ( "else" statement )? ;
 
 define_ast!(
     AstStmt,
@@ -55,4 +77,5 @@ define_ast!(
     [ExpressionStmt { expression: Expr }, visit_expression_stmt],
     [PrintStmt { expression: Expr }, visit_print_stmt],
     [VarStmt { name: Token , initializer: Option<Expr> }, visit_var_stmt],
+    [IfStmt { condition: Expr , then_branch: Box<Stmt>, else_branch: Option<Box<Stmt>>}, visit_if_stmt],
 );

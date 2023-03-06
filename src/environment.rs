@@ -22,13 +22,6 @@ impl Default for Environment {
 }
 
 impl Environment {
-    pub fn new(enclosing: Rc<RefCell<Environment>>) -> Self {
-        Self {
-            values: HashMap::new(),
-            enclosing: Some(enclosing),
-        }
-    }
-
     pub fn define(&mut self, name: String, value: Option<Value>) {
         self.values.insert(name, value);
     }

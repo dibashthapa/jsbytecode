@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, LiteralExpr,
-        PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr,
+        AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, IfStmt, LiteralExpr,
+        LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,
@@ -18,6 +18,8 @@ pub trait ParseExpr {
     fn factor(&mut self) -> LoxResult<Expr>;
     fn unary(&mut self) -> LoxResult<Expr>;
     fn primary(&mut self) -> LoxResult<Expr>;
+    fn or(&mut self) -> LoxResult<Expr>;
+    fn and(&mut self) -> LoxResult<Expr>;
 }
 
 pub struct Parser<'a> {
@@ -66,6 +68,9 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> LoxResult<Stmt> {
+        if self.match_token(&[If]) {
+            return self.if_statment();
+        }
         if self.match_token(&[Print]) {
             return self.print_statement();
         }
@@ -76,6 +81,25 @@ impl<'a> Parser<'a> {
         }
 
         self.expression_statement()
+    }
+
+    fn if_statment(&mut self) -> LoxResult<Stmt> {
+        self.consume(LeftParen, "Expect '(' after 'if' ")?;
+        let condition = self.expression()?;
+        self.consume(RightParen, "Expect ')' after if condition.")?;
+
+        let then_branch = Box::new(self.statement()?);
+        let mut else_branch = None;
+
+        if self.match_token(&[Else]) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
+
+        return Ok(Stmt::IfStmt(IfStmt {
+            condition,
+            then_branch,
+            else_branch,
+        }));
     }
 
     fn block(&mut self) -> LoxResult<Vec<Stmt>> {
@@ -153,7 +177,7 @@ impl<'a> ParseExpr for Parser<'a> {
     }
 
     fn assignment(&mut self) -> LoxResult<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.match_token(&[Equal]) {
             let equals = self.previous().to_owned();
@@ -168,6 +192,38 @@ impl<'a> ParseExpr for Parser<'a> {
                 }
                 _ => return Err(self.error(&equals, "Invalid assignment target")),
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> LoxResult<Expr> {
+        let mut expr = self.and()?;
+
+        while self.match_token(&[Or]) {
+            let operator = self.previous().to_owned();
+            let right = self.and()?;
+            expr = Expr::LogicalExpr(LogicalExpr {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> LoxResult<Expr> {
+        let mut expr = self.equality()?;
+
+        while self.match_token(&[And]) {
+            let operator = self.previous().to_owned();
+            let right = self.equality()?;
+            expr = Expr::LogicalExpr(LogicalExpr {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
         }
 
         Ok(expr)

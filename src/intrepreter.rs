@@ -2,14 +2,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::ast::{
-    AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, LiteralExpr, PrintStmt,
-    Stmt, UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
+    AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, IfStmt, LiteralExpr,
+    LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
 };
 use crate::environment::Environment;
 use crate::error::{Error, LoxErrors, LoxResult};
 use crate::token::Token;
 use crate::token_type::TokenType::{
-    Bang, BangEqual, EqualEqual, Greater, GreaterEqual, Less, LessEqual, Minus, Plus, Slash, Star,
+    self, Bang, BangEqual, EqualEqual, Greater, GreaterEqual, Less, LessEqual, Minus, Plus, Slash,
+    Star,
 };
 use crate::tools::*;
 use crate::value::Value;
@@ -100,6 +101,24 @@ fn check_number_operands(operator: &Token, left: &Value, right: &Value) -> LoxRe
 
 impl VisitorExpr for Intrepreter {
     type Result = LoxResult<Literal>;
+
+    fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> Self::Result {
+        let left = self.evaluate(&expr.left)?;
+
+        if let Some(left) = left {
+            if expr.operator.type_ == TokenType::Or {
+                if is_truthy(&left) {
+                    return Ok(Some(left));
+                } else {
+                    if !is_truthy(&left) {
+                        return Ok(Some(left));
+                    }
+                }
+            }
+        }
+
+        self.evaluate(&expr.right)
+    }
 
     fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Self::Result {
         let value = self.evaluate(&expr.value)?;
@@ -193,6 +212,19 @@ impl VisitorExpr for Intrepreter {
 
 impl VisitorStmt for Intrepreter {
     type Result = LoxResult<()>;
+    fn visit_if_stmt(&mut self, stmt: &IfStmt) -> Self::Result {
+        let value = self.evaluate(&stmt.condition)?.unwrap();
+        if is_truthy(&value) {
+            self.execute(&stmt.then_branch)?;
+        }
+
+        if let Some(else_branch) = &stmt.else_branch {
+            self.execute(else_branch.as_ref())?;
+        }
+
+        Ok(())
+    }
+
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Self::Result {
         let value = self.evaluate(&stmt.expression)?.unwrap();
         println!("{value}");
