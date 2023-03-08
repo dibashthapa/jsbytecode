@@ -62,10 +62,10 @@ impl Default for Intrepreter {
 }
 
 fn is_truthy(object: &Value) -> bool {
-    if *object == Value::Nil {
-        false
-    } else {
-        true
+    match *object {
+        Value::Nil => false , 
+        Value::Boolean(b) => b,
+        _ => false
     }
 }
 
@@ -104,6 +104,7 @@ impl VisitorExpr for Intrepreter {
 
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> Self::Result {
         let left = self.evaluate(&expr.left)?;
+            dbg!(&left);
 
         if let Some(left) = left {
             if expr.operator.type_ == TokenType::Or {
@@ -216,9 +217,7 @@ impl VisitorStmt for Intrepreter {
         let value = self.evaluate(&stmt.condition)?.unwrap();
         if is_truthy(&value) {
             self.execute(&stmt.then_branch)?;
-        }
-
-        if let Some(else_branch) = &stmt.else_branch {
+        } else if let Some(else_branch) = &stmt.else_branch {
             self.execute(else_branch.as_ref())?;
         }
 
