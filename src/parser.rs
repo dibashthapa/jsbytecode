@@ -1,7 +1,7 @@
 use crate::{
     ast::{
         AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, IfStmt, LiteralExpr,
-        LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr,
+        LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr, WhileStmt,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,
@@ -74,6 +74,15 @@ impl<'a> Parser<'a> {
         if self.match_token(&[Print]) {
             return self.print_statement();
         }
+
+        if self.match_token(&[For]) {
+            return self.for_statement();
+        }
+
+        if self.match_token(&[While]) {
+            return self.while_statement();
+        }
+
         if self.match_token(&[LeftBrace]) {
             return Ok(Stmt::BlockStmt(BlockStmt {
                 statements: self.block()?,
@@ -81,6 +90,67 @@ impl<'a> Parser<'a> {
         }
 
         self.expression_statement()
+    }
+
+    fn while_statement(&mut self) -> LoxResult<Stmt> {
+        self.consume(LeftParen, "Expect '(' after 'while'")?;
+        let condition = self.expression()?;
+        self.consume(RightParen, "Expect ')' after condition")?;
+        let body = Box::new(self.statement()?);
+
+        Ok(Stmt::WhileStmt(WhileStmt { condition, body }))
+    }
+
+    fn for_statement(&mut self) -> LoxResult<Stmt> {
+        self.consume(LeftParen, "Expect '(' after 'for'")?;
+        let initializer;
+        if self.match_token(&[Semicolon]) {
+            initializer = None
+        } else if self.match_token(&[Var]) {
+            initializer = Some(self.var_declaration()?);
+        } else {
+            initializer = Some(self.expression_statement()?);
+        }
+
+        let mut condition = None;
+
+        if !self.check(&Semicolon) {
+            condition = Some(self.expression()?);
+        }
+        self.consume(Semicolon, "Expect ';' after loop condition")?;
+
+        let mut increment = None;
+
+        if !self.check(&RightParen) {
+            increment = Some(self.expression()?);
+        }
+        self.consume(RightParen, "Expect ')' after for clauses")?;
+
+        let mut body = self.statement()?;
+
+        if let Some(increment) = increment {
+            body = Stmt::BlockStmt(BlockStmt {
+                statements: vec![
+                    body,
+                    Stmt::ExpressionStmt(ExpressionStmt {
+                        expression: increment,
+                    }),
+                ],
+            });
+        }
+
+        if let Some(condition) = condition {
+            body = Stmt::WhileStmt(WhileStmt {
+                condition,
+                body: Box::new(body),
+            });
+            if let Some(initializer) = initializer {
+                body = Stmt::BlockStmt(BlockStmt {
+                    statements: vec![initializer, body],
+                });
+            }
+        }
+        Ok(body)
     }
 
     fn if_statment(&mut self) -> LoxResult<Stmt> {
@@ -94,7 +164,6 @@ impl<'a> Parser<'a> {
         if self.match_token(&[Else]) {
             else_branch = Some(Box::new(self.statement()?));
         }
-
 
         return Ok(Stmt::IfStmt(IfStmt {
             condition,

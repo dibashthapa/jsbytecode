@@ -4,6 +4,7 @@ use std::rc::Rc;
 use crate::ast::{
     AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, IfStmt, LiteralExpr,
     LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
+    WhileStmt,
 };
 use crate::environment::Environment;
 use crate::error::{Error, LoxErrors, LoxResult};
@@ -63,9 +64,9 @@ impl Default for Intrepreter {
 
 fn is_truthy(object: &Value) -> bool {
     match *object {
-        Value::Nil => false , 
+        Value::Nil => false,
         Value::Boolean(b) => b,
-        _ => false
+        _ => false,
     }
 }
 
@@ -104,7 +105,7 @@ impl VisitorExpr for Intrepreter {
 
     fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> Self::Result {
         let left = self.evaluate(&expr.left)?;
-            dbg!(&left);
+        dbg!(&left);
 
         if let Some(left) = left {
             if expr.operator.type_ == TokenType::Or {
@@ -225,8 +226,7 @@ impl VisitorStmt for Intrepreter {
     }
 
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Self::Result {
-        let value = self.evaluate(&stmt.expression)?.unwrap();
-        println!("{value}");
+        self.evaluate(&stmt.expression)?.unwrap();
         Ok(())
     }
 
@@ -250,6 +250,13 @@ impl VisitorStmt for Intrepreter {
 
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Self::Result {
         self.execute_block(&stmt.statements, self.environment.clone())?;
+        Ok(())
+    }
+
+    fn visit_while_stmt(&mut self, stmt: &WhileStmt) -> Self::Result {
+        while is_truthy(&self.evaluate(&stmt.condition)?.unwrap()) {
+            self.execute(&stmt.body)?;
+        }
         Ok(())
     }
 }

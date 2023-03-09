@@ -64,10 +64,18 @@ define_ast!(
 // statement      → exprStmt
 //                | ifStmt
 //                | printStmt
+//                | forStmt
+//                | whileStmt
 //                | block ;
+//
+// whileStmt      → "while" "(" expression ")" statement ;
 //
 // ifStmt         → "if" "(" expression ")" statement
 //                ( "else" statement )? ;
+
+// forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+//                  expression? ";"
+//                  expression? ")" statement ;
 
 define_ast!(
     AstStmt,
@@ -78,4 +86,5 @@ define_ast!(
     [PrintStmt { expression: Expr }, visit_print_stmt],
     [VarStmt { name: Token , initializer: Option<Expr> }, visit_var_stmt],
     [IfStmt { condition: Expr , then_branch: Box<Stmt>, else_branch: Option<Box<Stmt>>}, visit_if_stmt],
+    [WhileStmt { condition: Expr, body: Box<Stmt>}, visit_while_stmt],
 );
