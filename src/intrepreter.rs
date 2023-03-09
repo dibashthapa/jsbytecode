@@ -174,10 +174,7 @@ impl VisitorExpr for Intrepreter {
                 check_number_operands(&expr.operator, &left, &right)?;
                 Ok(Some(left * right))
             }
-            Plus => {
-                check_number_operands(&expr.operator, &left, &right)?;
-                Ok(Some(left + right))
-            }
+            Plus => Ok(Some(left + right)),
             Greater => {
                 check_number_operands(&expr.operator, &left, &right)?;
                 Ok(Some(Value::Boolean(left > right)))
@@ -226,7 +223,9 @@ impl VisitorStmt for Intrepreter {
     }
 
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Self::Result {
-        self.evaluate(&stmt.expression)?.unwrap();
+        if let Some(value) = self.evaluate(&stmt.expression)? {
+            println!("{value}");
+        }
         Ok(())
     }
 

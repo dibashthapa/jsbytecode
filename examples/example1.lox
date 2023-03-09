@@ -1,3 +1,6 @@
-var key = "value";
+var a = "hello";
+var b = " k xa";
+
+print a + b;
 
 

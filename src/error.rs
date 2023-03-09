@@ -33,7 +33,7 @@ impl ToString for LoxErrors {
 
 impl LoxErrors {
     pub fn report(&self) {
-        eprintln!("{:?}\n{}", self, self.to_string());
+        eprintln!("{}", self.to_string());
     }
 }
 
