@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::ast::{
-    AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, IfStmt, LiteralExpr,
-    LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr, VisitorExpr, VisitorStmt,
+    Assign, Binary, BlockStmt, Expr, ExpressionStmt, Grouping, IfStmt, Literal as LiteralExp,
+    Logical, PrintStmt, Stmt, Unary, VarStmt, Variable, VisitorExpr, VisitorStmt,
     WhileStmt,
 };
 use crate::environment::Environment;
@@ -73,8 +73,6 @@ fn is_truthy(object: &Value) -> bool {
 fn is_equal(a: &Literal, b: &Literal) -> bool {
     if a.is_none() && b.is_none() {
         false
-    } else if a.is_none() {
-        false
     } else {
         a.eq(b)
     }
@@ -103,26 +101,19 @@ fn check_number_operands(operator: &Token, left: &Value, right: &Value) -> LoxRe
 impl VisitorExpr for Intrepreter {
     type Result = LoxResult<Literal>;
 
-    fn visit_logical_expr(&mut self, expr: &LogicalExpr) -> Self::Result {
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Self::Result {
         let left = self.evaluate(&expr.left)?;
-        dbg!(&left);
 
         if let Some(left) = left {
-            if expr.operator.type_ == TokenType::Or {
-                if is_truthy(&left) {
-                    return Ok(Some(left));
-                } else {
-                    if !is_truthy(&left) {
-                        return Ok(Some(left));
-                    }
-                }
+            if expr.operator.type_ == TokenType::Or  && is_truthy(&left){
+                return Ok(Some(left));
             }
         }
 
         self.evaluate(&expr.right)
     }
 
-    fn visit_assign_expr(&mut self, expr: &AssignExpr) -> Self::Result {
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Self::Result {
         let value = self.evaluate(&expr.value)?;
         self.environment
             .borrow_mut()
@@ -130,19 +121,19 @@ impl VisitorExpr for Intrepreter {
         Ok(value)
     }
 
-    fn visit_variable_expr(&mut self, expr: &VariableExpr) -> Self::Result {
+    fn visit_variable_expr(&mut self, expr: &Variable) -> Self::Result {
         self.environment.borrow_mut().get(expr.name.clone())
     }
 
-    fn visit_literal_expr(&mut self, expr: &LiteralExpr) -> Self::Result {
+    fn visit_literal_expr(&mut self, expr: &LiteralExp) -> Self::Result {
         Ok(expr.value.to_owned())
     }
 
-    fn visit_grouping_expr(&mut self, expr: &GroupingExpr) -> LoxResult<Literal> {
-        self.evaluate(&*expr.expression)
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> LoxResult<Literal> {
+        self.evaluate(&expr.expression)
     }
 
-    fn visit_unary_expr(&mut self, expr: &UnaryExpr) -> LoxResult<Literal> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> LoxResult<Literal> {
         let right = self.evaluate(&expr.right)?.unwrap();
 
         match expr.operator.type_ {
@@ -157,7 +148,7 @@ impl VisitorExpr for Intrepreter {
             _ => Ok(None),
         }
     }
-    fn visit_binary_exp(&mut self, expr: &BinaryExpr) -> LoxResult<Literal> {
+    fn visit_binary_exp(&mut self, expr: &Binary) -> LoxResult<Literal> {
         let left = self.evaluate(&expr.left)?.unwrap();
         let right = self.evaluate(&expr.right)?.unwrap();
 
@@ -239,7 +230,7 @@ impl VisitorStmt for Intrepreter {
         let mut value = None;
 
         if let Some(initializer) = &stmt.initializer {
-            value = self.evaluate(&initializer)?;
+            value = self.evaluate(initializer)?;
         }
         self.environment
             .borrow_mut()
@@ -265,7 +256,7 @@ mod tests {
     use super::*;
 
     fn make_literal_num(num: f64) -> Box<Expr> {
-        Box::new(Expr::LiteralExpr(LiteralExpr {
+        Box::new(Expr::LiteralExp(LiteralExp {
             value: Some(Value::Number(num)),
         }))
     }
@@ -273,7 +264,7 @@ mod tests {
     #[test]
     fn test_unary_minus() {
         let mut terp = Intrepreter::default();
-        let unary = UnaryExpr {
+        let unary = Unary {
             operator: Token::new(Minus, "-", None, 1),
             right: make_literal_num(123.0),
         };
@@ -286,9 +277,9 @@ mod tests {
     #[test]
     fn test_unary_not() {
         let mut terp = Intrepreter::default();
-        let unary = UnaryExpr {
+        let unary = Unary {
             operator: Token::new(Bang, "!", None, 1),
-            right: Box::new(Expr::LiteralExpr(LiteralExpr {
+            right: Box::new(Expr::LiteralExp(LiteralExp {
                 value: Some(Value::Boolean(true)),
             })),
         };
@@ -300,12 +291,12 @@ mod tests {
     #[test]
     fn test_binary_sub() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
-            left: Box::new(Expr::LiteralExpr(LiteralExpr {
+        let binary_expr = Binary {
+            left: Box::new(Expr::LiteralExp(LiteralExp {
                 value: Some(Value::Number(100.0)),
             })),
             operator: Token::new(Minus, "-", None, 1),
-            right: Box::new(Expr::LiteralExpr(LiteralExpr {
+            right: Box::new(Expr::LiteralExp(LiteralExp {
                 value: Some(Value::Number(50.0)),
             })),
         };
@@ -318,7 +309,7 @@ mod tests {
     #[test]
     fn test_binary_add() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
+        let binary_expr = Binary {
             left: make_literal_num(100.0),
             operator: Token::new(Plus, "+", None, 1),
             right: make_literal_num(200.0),
@@ -331,7 +322,7 @@ mod tests {
     #[test]
     fn test_binary_mul() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
+        let binary_expr = Binary {
             left: make_literal_num(10.0),
             operator: Token::new(Star, "*", None, 1),
             right: make_literal_num(20.0),
@@ -344,7 +335,7 @@ mod tests {
     #[test]
     fn test_binary_equals() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
+        let binary_expr = Binary {
             left: make_literal_num(15.0),
             operator: Token::new(EqualEqual, "==", None, 1),
             right: make_literal_num(10.0),
@@ -357,7 +348,7 @@ mod tests {
     #[test]
     fn test_binary_div() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
+        let binary_expr = Binary {
             left: make_literal_num(50.0),
             operator: Token::new(Slash, "/", None, 1),
             right: make_literal_num(10.0),
@@ -370,7 +361,7 @@ mod tests {
     #[test]
     fn test_binary_greater() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
+        let binary_expr = Binary {
             left: make_literal_num(50.0),
             operator: Token::new(Greater, ">", None, 1),
             right: make_literal_num(10.0),
@@ -383,7 +374,7 @@ mod tests {
     #[test]
     fn test_binary_smaller() {
         let mut terp = Intrepreter::default();
-        let binary_expr = BinaryExpr {
+        let binary_expr = Binary {
             left: make_literal_num(5.0),
             operator: Token::new(Less, "<", None, 1),
             right: make_literal_num(10.0),

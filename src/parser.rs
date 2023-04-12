@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        AssignExpr, BinaryExpr, BlockStmt, Expr, ExpressionStmt, GroupingExpr, IfStmt, LiteralExpr,
-        LogicalExpr, PrintStmt, Stmt, UnaryExpr, VarStmt, VariableExpr, WhileStmt,
+        Assign, Binary, BlockStmt, Expr, ExpressionStmt, Grouping, IfStmt, Literal,
+        Logical, PrintStmt, Stmt, Unary, VarStmt, Variable, WhileStmt,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,
@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        return false;
+        false
     }
 
     fn advance(&mut self) -> &Token {
@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek().type_ == TokenType::EOF
+        self.peek().type_ == TokenType::Eof
     }
 
     fn statement(&mut self) -> LoxResult<Stmt> {
@@ -165,11 +165,11 @@ impl<'a> Parser<'a> {
             else_branch = Some(Box::new(self.statement()?));
         }
 
-        return Ok(Stmt::IfStmt(IfStmt {
+        Ok(Stmt::IfStmt(IfStmt {
             condition,
             then_branch,
             else_branch,
-        }));
+        }))
     }
 
     fn block(&mut self) -> LoxResult<Vec<Stmt>> {
@@ -254,8 +254,8 @@ impl<'a> ParseExpr for Parser<'a> {
             let value = self.assignment()?;
 
             match expr {
-                Expr::VariableExpr(VariableExpr { name }) => {
-                    return Ok(Expr::AssignExpr(AssignExpr {
+                Expr::Variable(Variable { name }) => {
+                    return Ok(Expr::Assign(Assign {
                         name,
                         value: Box::new(value),
                     }));
@@ -273,7 +273,7 @@ impl<'a> ParseExpr for Parser<'a> {
         while self.match_token(&[Or]) {
             let operator = self.previous().to_owned();
             let right = self.and()?;
-            expr = Expr::LogicalExpr(LogicalExpr {
+            expr = Expr::Logical(Logical {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -289,7 +289,7 @@ impl<'a> ParseExpr for Parser<'a> {
         while self.match_token(&[And]) {
             let operator = self.previous().to_owned();
             let right = self.equality()?;
-            expr = Expr::LogicalExpr(LogicalExpr {
+            expr = Expr::Logical(Logical {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -301,35 +301,35 @@ impl<'a> ParseExpr for Parser<'a> {
 
     fn primary(&mut self) -> LoxResult<Expr> {
         if self.match_token(&[False]) {
-            return Ok(Expr::LiteralExpr(LiteralExpr {
+            return Ok(Expr::Literal(Literal {
                 value: Some(Value::Boolean(false)),
             }));
         }
         if self.match_token(&[True]) {
-            return Ok(Expr::LiteralExpr(LiteralExpr {
+            return Ok(Expr::Literal(Literal {
                 value: Some(Value::Boolean(true)),
             }));
         }
         if self.match_token(&[Nil]) {
-            return Ok(Expr::LiteralExpr(LiteralExpr {
+            return Ok(Expr::Literal(Literal {
                 value: Some(Value::Nil),
             }));
         }
         if self.match_token(&[Number, TokenType::String]) {
-            return Ok(Expr::LiteralExpr(LiteralExpr {
+            return Ok(Expr::Literal(Literal {
                 value: self.previous().literal.to_owned(),
             }));
         }
         if self.match_token(&[LeftParen]) {
             let expr = self.expression()?;
             self.consume(RightParen, "Expect ')' after expression")?;
-            return Ok(Expr::GroupingExpr(GroupingExpr {
+            return Ok(Expr::Grouping(Grouping {
                 expression: Box::new(expr),
             }));
         }
 
         if self.match_token(&[Identifier]) {
-            return Ok(Expr::VariableExpr(VariableExpr {
+            return Ok(Expr::Variable(Variable {
                 name: self.previous().to_owned(),
             }));
         } else {
@@ -346,7 +346,7 @@ impl<'a> ParseExpr for Parser<'a> {
         while self.match_token(&[BangEqual, EqualEqual]) {
             let operator = self.previous().to_owned();
             let right = self.comparison()?;
-            expr = Expr::BinaryExpr(BinaryExpr {
+            expr = Expr::Binary(Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -368,7 +368,7 @@ impl<'a> ParseExpr for Parser<'a> {
             let operator = self.previous().to_owned();
             let right = self.term()?;
 
-            expr = Expr::BinaryExpr(BinaryExpr {
+            expr = Expr::Binary(Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -384,7 +384,7 @@ impl<'a> ParseExpr for Parser<'a> {
         while self.match_token(&[Minus, Plus]) {
             let operator = self.previous().to_owned();
             let right = Box::new(self.factor()?);
-            expr = Expr::BinaryExpr(BinaryExpr {
+            expr = Expr::Binary(Binary {
                 left: Box::new(expr),
                 operator,
                 right,
@@ -401,7 +401,7 @@ impl<'a> ParseExpr for Parser<'a> {
             let operator = self.previous().to_owned();
             let right = self.unary()?;
 
-            expr = Expr::BinaryExpr(BinaryExpr {
+            expr = Expr::Binary(Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -416,7 +416,7 @@ impl<'a> ParseExpr for Parser<'a> {
             let operator = self.previous().to_owned();
             let right = self.unary()?;
 
-            return Ok(Expr::UnaryExpr(UnaryExpr {
+            return Ok(Expr::Unary(Unary {
                 operator,
                 right: Box::new(right),
             }));

@@ -174,7 +174,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            LoxErrors::ParseError(Error::new(self.line, "Unterminated string.".to_string()));
+            Error::new(self.line, "Unterminated string.".to_string());
         }
 
         self.advance();
@@ -186,7 +186,7 @@ impl Scanner {
         if let Some(value) = value {
             self.add_token_with_value(TokenType::String, Some(Value::String(value)));
         } else {
-            LoxErrors::ParseError(Error::new(self.line, "Invalid string slice".to_string()));
+            Error::new(self.line, "Invalid string slice".to_string());
         }
     }
 
@@ -195,14 +195,14 @@ impl Scanner {
     }
 
     fn is_digit(&self, c: char) -> bool {
-        return c >= '0' && c <= '9';
+        ('0'..='9').contains(&c)
     }
 
     fn peek(&self) -> char {
         if self.is_at_end() {
             return '\0';
         }
-        return self.current_char();
+        self.current_char()
     }
 
     // gets the next character
@@ -235,6 +235,6 @@ impl Scanner {
             return false;
         }
         self.current += 1;
-        return true;
+        true
     }
 }

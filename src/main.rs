@@ -57,8 +57,8 @@ fn run_file(file_name: String) {
 
 fn run(source: String, intrepreter: &mut Intrepreter) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
-    let mut tokens = scanner.scan_tokens();
-    let mut parser = Parser::new(&mut tokens);
+    let  tokens = scanner.scan_tokens();
+    let mut parser = Parser::new(&tokens);
     let statements = parser.parse()?;
     intrepreter.intrepret(&statements)?;
     Ok(())

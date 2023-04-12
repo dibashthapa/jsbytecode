@@ -6,19 +6,10 @@ use crate::{
     value::Value,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Environment {
     values: HashMap<String, Option<Value>>,
     enclosing: Option<Rc<RefCell<Environment>>>,
-}
-
-impl Default for Environment {
-    fn default() -> Self {
-        Self {
-            values: HashMap::new(),
-            enclosing: None,
-        }
-    }
 }
 
 impl Environment {

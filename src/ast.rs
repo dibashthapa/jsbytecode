@@ -12,7 +12,7 @@ define_ast!(
     VisitorExpr,
     Expr,
     [
-        BinaryExpr {
+        Binary {
             left: Box<Expr>,
             operator: Token,
             right: Box<Expr>
@@ -20,39 +20,39 @@ define_ast!(
         visit_binary_exp
     ],
     [
-        AssignExpr {
+        Assign {
             name: Token,
             value: Box<Expr>
         },
         visit_assign_expr
     ],
     [
-        GroupingExpr {
+        Grouping {
             expression: Box<Expr>
         },
         visit_grouping_expr
     ],
     [
-        LiteralExpr {
+        Literal {
             value: Option<LiteralEnum>
         },
         visit_literal_expr
     ],
     [
-        UnaryExpr {
+        Unary {
             operator: Token,
             right: Box<Expr>
         },
         visit_unary_expr
     ],
     [
-        VariableExpr {
+        Variable {
             name: Token
         },
         visit_variable_expr
     ],
     [
-        LogicalExpr {
+        Logical {
             left: Box<Expr>,
             operator: Token,
             right: Box<Expr>
