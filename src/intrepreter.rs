@@ -3,8 +3,7 @@ use std::rc::Rc;
 
 use crate::ast::{
     Assign, Binary, BlockStmt, Expr, ExpressionStmt, Grouping, IfStmt, Literal as LiteralExp,
-    Logical, PrintStmt, Stmt, Unary, VarStmt, Variable, VisitorExpr, VisitorStmt,
-    WhileStmt,
+    Logical, PrintStmt, Stmt, Unary, VarStmt, Variable, VisitorExpr, VisitorStmt, WhileStmt,
 };
 use crate::environment::Environment;
 use crate::error::{Error, LoxErrors, LoxResult};
@@ -105,7 +104,7 @@ impl VisitorExpr for Intrepreter {
         let left = self.evaluate(&expr.left)?;
 
         if let Some(left) = left {
-            if expr.operator.type_ == TokenType::Or  && is_truthy(&left){
+            if expr.operator.type_ == TokenType::Or && is_truthy(&left) {
                 return Ok(Some(left));
             }
         }
@@ -256,7 +255,7 @@ mod tests {
     use super::*;
 
     fn make_literal_num(num: f64) -> Box<Expr> {
-        Box::new(Expr::LiteralExp(LiteralExp {
+        Box::new(Expr::Literal(LiteralExp {
             value: Some(Value::Number(num)),
         }))
     }
@@ -279,7 +278,7 @@ mod tests {
         let mut terp = Intrepreter::default();
         let unary = Unary {
             operator: Token::new(Bang, "!", None, 1),
-            right: Box::new(Expr::LiteralExp(LiteralExp {
+            right: Box::new(Expr::Literal(LiteralExp {
                 value: Some(Value::Boolean(true)),
             })),
         };
@@ -292,11 +291,11 @@ mod tests {
     fn test_binary_sub() {
         let mut terp = Intrepreter::default();
         let binary_expr = Binary {
-            left: Box::new(Expr::LiteralExp(LiteralExp {
+            left: Box::new(Expr::Literal(LiteralExp {
                 value: Some(Value::Number(100.0)),
             })),
             operator: Token::new(Minus, "-", None, 1),
-            right: Box::new(Expr::LiteralExp(LiteralExp {
+            right: Box::new(Expr::Literal(LiteralExp {
                 value: Some(Value::Number(50.0)),
             })),
         };
