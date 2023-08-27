@@ -33,6 +33,7 @@ impl Add for Value {
         match (self, other) {
             (Self::Number(left), Self::Number(right)) => Self::Number(left + right),
             (Self::String(left), Self::String(right)) => Self::String(format!("{left}{right}")),
+            (Self::String(left), Self::Number(right)) => Self::String(format!("{left}{right}")),
             _ => Self::ArithmeticError,
         }
     }

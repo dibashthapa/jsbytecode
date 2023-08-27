@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        Assign, Binary, BlockStmt, Expr, ExpressionStmt, Grouping, IfStmt, Literal,
-        Logical, PrintStmt, Stmt, Unary, VarStmt, Variable, WhileStmt,
+        Assign, Binary, BlockStmt, Expr, ExpressionStmt, Grouping, IfStmt, Literal, Logical,
+        PrintStmt, Stmt, Unary, VarStmt, Variable, WhileStmt,
     },
     error::{Error, LoxErrors, LoxResult},
     token::Token,

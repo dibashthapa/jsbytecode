@@ -17,16 +17,25 @@ use crate::value::Value;
 
 pub struct Intrepreter {
     environment: Rc<RefCell<Environment>>,
+    repl: bool,
 }
 
 type Literal = Option<Value>;
 
 impl Intrepreter {
-    fn new(environment: Rc<RefCell<Environment>>) -> Self {
-        Self { environment }
+    fn new(environment: Rc<RefCell<Environment>>, repl: bool) -> Self {
+        Self { environment, repl }
     }
+
     fn evaluate(&mut self, expr: &Expr) -> LoxResult<Literal> {
         expr.accept(self)
+    }
+
+    pub fn without_repl() -> Self {
+        Self {
+            environment: Rc::new(RefCell::new(Environment::default())),
+            repl: false,
+        }
     }
 
     pub fn intrepret(&mut self, statements: &[Stmt]) -> LoxResult<()> {
@@ -44,8 +53,9 @@ impl Intrepreter {
         &mut self,
         statements: &[Stmt],
         environment: Rc<RefCell<Environment>>,
+        repl: bool,
     ) -> LoxResult<()> {
-        let mut interpreter = Intrepreter::new(environment);
+        let mut interpreter = Intrepreter::new(environment, repl);
         statements
             .iter()
             .try_for_each(|stmt| interpreter.execute(stmt))?;
@@ -57,6 +67,7 @@ impl Default for Intrepreter {
     fn default() -> Self {
         Self {
             environment: Rc::new(RefCell::new(Environment::default())),
+            repl: true,
         }
     }
 }
@@ -213,8 +224,12 @@ impl VisitorStmt for Intrepreter {
     }
 
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Self::Result {
-        if let Some(value) = self.evaluate(&stmt.expression)? {
-            println!("{value}");
+        if self.repl {
+            if let Some(value) = self.evaluate(&stmt.expression)? {
+                println!("{value}");
+            }
+        } else {
+            self.evaluate(&stmt.expression)?;
         }
         Ok(())
     }
@@ -238,7 +253,7 @@ impl VisitorStmt for Intrepreter {
     }
 
     fn visit_block_stmt(&mut self, stmt: &BlockStmt) -> Self::Result {
-        self.execute_block(&stmt.statements, self.environment.clone())?;
+        self.execute_block(&stmt.statements, self.environment.clone(), self.repl)?;
         Ok(())
     }
 

@@ -47,7 +47,7 @@ fn run_prompt() {
 fn run_file(file_name: String) {
     let file_path = format!("examples/{}", file_name);
     let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
-    let mut intrepreter = Intrepreter::default();
+    let mut intrepreter = Intrepreter::without_repl();
 
     match run(contents, &mut intrepreter) {
         Ok(()) => {}
@@ -57,7 +57,7 @@ fn run_file(file_name: String) {
 
 fn run(source: String, intrepreter: &mut Intrepreter) -> LoxResult<()> {
     let mut scanner = Scanner::new(source);
-    let  tokens = scanner.scan_tokens();
+    let tokens = scanner.scan_tokens();
     let mut parser = Parser::new(&tokens);
     let statements = parser.parse()?;
     intrepreter.intrepret(&statements)?;
