@@ -1,8 +1,8 @@
 var name = "dibash";
-var arko_name = "panik";
+var arko_name = "dibash";
 
 if (name == arko_name) {
-    "name mileko xa";
+    print("The name is correct");
 } else {
-    "mileko xaina";
+    print("The name is incorrect");
   }

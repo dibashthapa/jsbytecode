@@ -1,7 +1,7 @@
 var x = 5;
 var a = 1;
-for (a=1; a <= 5; a = a+1){
-   print " x is " + x;
+for (a=1; a <= 8; a = a+1){
+   print("index is "+ a + "and x is " + x);
 }
 
 
