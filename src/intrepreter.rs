@@ -225,9 +225,7 @@ impl VisitorStmt for Intrepreter {
 
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Self::Result {
         if self.repl {
-            if let Some(value) = self.evaluate(&stmt.expression)? {
-                println!("{value}");
-            }
+            if let Some(value) = self.evaluate(&stmt.expression)? {}
         } else {
             self.evaluate(&stmt.expression)?;
         }
@@ -246,6 +244,7 @@ impl VisitorStmt for Intrepreter {
         if let Some(initializer) = &stmt.initializer {
             value = self.evaluate(initializer)?;
         }
+
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme.clone(), value);

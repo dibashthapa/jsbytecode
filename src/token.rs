@@ -18,6 +18,10 @@ impl Token {
         }
     }
 
+    pub fn is_identifier(&self) -> bool {
+        self.type_ == TokenType::Identifier
+    }
+
     pub fn eof(line: usize) -> Token {
         Token {
             type_: TokenType::Eof,
