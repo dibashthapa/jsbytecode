@@ -124,6 +124,7 @@ impl<'a> Parser<'a> {
         if !self.check(&RightParen) {
             increment = Some(self.expression()?);
         }
+        dbg!(&increment);
         self.consume(RightParen, "Expect ')' after for clauses")?;
 
         let mut body = self.statement()?;
@@ -192,7 +193,6 @@ impl<'a> Parser<'a> {
 
     fn print_statement(&mut self) -> LoxResult<Stmt> {
         let expr = self.expression()?;
-        self.consume(Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::PrintStmt(PrintStmt { expression: expr }))
     }
 
@@ -218,8 +218,6 @@ impl<'a> Parser<'a> {
         if self.match_token(&[Equal]) {
             initializer = Some(self.expression()?);
         }
-
-        self.consume(Semicolon, "Expect ; after variable declaration")?;
 
         Ok(Stmt::VarStmt(VarStmt { initializer, name }))
     }
@@ -329,9 +327,25 @@ impl<'a> ParseExpr for Parser<'a> {
         }
 
         if self.match_token(&[Identifier]) {
-            return Ok(Expr::Variable(Variable {
-                name: self.previous().to_owned(),
-            }));
+            let identifier = self.previous().to_owned();
+            if self.match_token(&[PostIncrement]) {
+                return Ok(Expr::Assign(Assign {
+                    name: identifier.clone(),
+                    value: Box::new(Expr::Binary(Binary {
+                        left: Box::new(Expr::Variable(Variable { name: identifier })),
+                        operator: Token {
+                            type_: Plus,
+                            lexeme: "+".into(),
+                            literal: None,
+                            line: self.previous().line,
+                        },
+                        right: Box::new(Expr::Literal(Literal {
+                            value: Some(Value::Number(1.0)),
+                        })),
+                    })),
+                }));
+            }
+            return Ok(Expr::Variable(Variable { name: identifier }));
         } else {
             Err(LoxErrors::ParseError(Error::new(
                 self.previous().line,

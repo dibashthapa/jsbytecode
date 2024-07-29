@@ -5,15 +5,14 @@ use std::{
 };
 
 use crate::error::{Error, LoxErrors};
-use crate::vm::Registers;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Boolean(bool),
+    Undefined,
     Nil,
     Number(f64),
     String(String),
-    Registers(Registers),
     ArithmeticError,
 }
 
@@ -29,14 +28,6 @@ impl Value {
             0.
         }
     }
-
-    pub fn as_registers(&self) -> Registers {
-        if let Self::Registers(reg) = self {
-            reg.clone()
-        } else {
-            Registers::R1
-        }
-    }
 }
 
 impl fmt::Display for Value {
@@ -46,8 +37,8 @@ impl fmt::Display for Value {
             Self::Nil => write!(f, "nil"),
             Self::Number(n) => write!(f, "{n}"),
             Self::String(s) => write!(f, "{s}"),
-            Self::Registers(r) => write!(f, "{:?}", r),
             Self::ArithmeticError => write!(f, "Unable to evalute arithmetic expression"),
+            Self::Undefined => write!(f, "undefined"),
         }
     }
 }

@@ -1,8 +1,4 @@
-var x = 5;
-var a = 1;
-for (a=1; a <= 8; a = a+1){
-   print("index is "+ a + "and x is " + x);
+var i
+for (i=0;i<=10; i = i++) {
 }
-
-
-
+print(i)
