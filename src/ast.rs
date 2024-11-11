@@ -1,5 +1,4 @@
-use crate::tools::{AstNode, AstStmt};
-use crate::{define_ast, token::Token, value::Value as LiteralEnum};
+use crate::{error::LoxErrors, token::Token, value::Value};
 
 // expression     → assignment ;
 // assignment     → IDENTIFIER "=" assignment
@@ -7,84 +6,62 @@ use crate::{define_ast, token::Token, value::Value as LiteralEnum};
 // logic_or       → logic_and ( "or" logic_and )* ;
 // logic_and      → equality ( "and" equality )* ;
 
-define_ast!(
-    AstNode,
-    VisitorExpr,
-    Expr,
-    [
-        Binary {
-            left: Box<Expr>,
-            operator: Token,
-            right: Box<Expr>
-        },
-        visit_binary_exp
-    ],
-    [
-        Assign {
-            name: Token,
-            value: Box<Expr>
-        },
-        visit_assign_expr
-    ],
-    [
-        Grouping {
-            expression: Box<Expr>
-        },
-        visit_grouping_expr
-    ],
-    [
-        Literal {
-            value: Option<LiteralEnum>
-        },
-        visit_literal_expr
-    ],
-    [
-        Unary {
-            operator: Token,
-            right: Box<Expr>
-        },
-        visit_unary_expr
-    ],
-    [
-        Variable {
-            name: Token
-        },
-        visit_variable_expr
-    ],
-    [
-        Logical {
-            left: Box<Expr>,
-            operator: Token,
-            right: Box<Expr>
-        },
-        visit_logical_expr
-    ],
-);
+// The Expression enum holds references to its variants
+#[derive(Debug)]
+pub enum Expression {
+    Binary {
+        left: Box<Expression>,
+        operator: Token,
+        right: Box<Expression>,
+    },
+    Grouping {
+        expression: Box<Expression>,
+    },
+    Literal {
+        value: Option<Value>,
+    },
+    Unary {
+        operator: Token,
+        right: Box<Expression>,
+    },
+    Variable {
+        name: Token,
+    },
 
-// statement      → exprStmt
-//                | ifStmt
-//                | printStmt
-//                | forStmt
-//                | whileStmt
-//                | block ;
-//
-// whileStmt      → "while" "(" expression ")" statement ;
-//
-// ifStmt         → "if" "(" expression ")" statement
-//                ( "else" statement )? ;
+    Assign {
+        name: Token,
+        value: Box<Expression>,
+    },
+    Logical {
+        left: Box<Expression>,
+        operator: Token,
+        right: Box<Expression>,
+    },
+}
 
-// forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
-//                  expression? ";"
-//                  expression? ")" statement ;
-
-define_ast!(
-    AstStmt,
-    VisitorStmt,
-    Stmt,
-    [BlockStmt { statements: Vec<Stmt> }, visit_block_stmt],
-    [ExpressionStmt { expression: Expr }, visit_expression_stmt],
-    [PrintStmt { expression: Expr }, visit_print_stmt],
-    [VarStmt { name: Token , initializer: Option<Expr> }, visit_var_stmt],
-    [IfStmt { condition: Expr , then_branch: Box<Stmt>, else_branch: Option<Box<Stmt>>}, visit_if_stmt],
-    [WhileStmt { condition: Expr, body: Box<Stmt>}, visit_while_stmt],
-);
+// Statement types follow the same pattern
+#[derive(Debug)]
+pub enum Statement {
+    Block {
+        statements: Vec<Statement>,
+    },
+    Expression {
+        expression: Expression,
+    },
+    Print {
+        expression: Expression,
+    },
+    Var {
+        name: Token,
+        initializer: Option<Expression>,
+    },
+    If {
+        condition: Expression,
+        then_branch: Box<Statement>,
+        else_branch: Box<Option<Statement>>,
+    },
+    While {
+        condition: Expression,
+        body: Box<Statement>,
+    },
+}

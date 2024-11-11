@@ -18,8 +18,8 @@ impl Environment {
     }
 
     pub fn get(&mut self, name: Token) -> LoxResult<Option<Value>> {
-        if self.values.contains_key(&name.lexeme) {
-            return Ok(self.values.get(&name.lexeme).unwrap().clone());
+        if let Some(value) = self.values.get(&name.lexeme) {
+            return Ok(value.clone());
         }
 
         Err(LoxErrors::RunTimeException(Error::new(

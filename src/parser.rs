@@ -1,25 +1,22 @@
 use crate::{
-    ast::{
-        Assign, Binary, BlockStmt, Expr, ExpressionStmt, Grouping, IfStmt, Literal, Logical,
-        PrintStmt, Stmt, Unary, VarStmt, Variable, WhileStmt,
-    },
+    ast::{Expression, Statement},
     error::{Error, LoxErrors, LoxResult},
     token::Token,
     token_type::TokenType::{self, *},
     value::Value,
 };
 
-pub trait ParseExpr {
-    fn expression(&mut self) -> LoxResult<Expr>;
-    fn equality(&mut self) -> LoxResult<Expr>;
-    fn assignment(&mut self) -> LoxResult<Expr>;
-    fn comparison(&mut self) -> LoxResult<Expr>;
-    fn term(&mut self) -> LoxResult<Expr>;
-    fn factor(&mut self) -> LoxResult<Expr>;
-    fn unary(&mut self) -> LoxResult<Expr>;
-    fn primary(&mut self) -> LoxResult<Expr>;
-    fn or(&mut self) -> LoxResult<Expr>;
-    fn and(&mut self) -> LoxResult<Expr>;
+pub trait ParseExpression {
+    fn expression(&mut self) -> LoxResult<Expression>;
+    fn equality(&mut self) -> LoxResult<Expression>;
+    fn assignment(&mut self) -> LoxResult<Expression>;
+    fn comparison(&mut self) -> LoxResult<Expression>;
+    fn term(&mut self) -> LoxResult<Expression>;
+    fn factor(&mut self) -> LoxResult<Expression>;
+    fn unary(&mut self) -> LoxResult<Expression>;
+    fn primary(&mut self) -> LoxResult<Expression>;
+    fn or(&mut self) -> LoxResult<Expression>;
+    fn and(&mut self) -> LoxResult<Expression>;
 }
 
 pub struct Parser<'a> {
@@ -67,7 +64,7 @@ impl<'a> Parser<'a> {
         self.peek().type_ == TokenType::Eof
     }
 
-    fn statement(&mut self) -> LoxResult<Stmt> {
+    fn statement(&mut self) -> LoxResult<Statement> {
         if self.match_token(&[If]) {
             return self.if_statment();
         }
@@ -84,24 +81,26 @@ impl<'a> Parser<'a> {
         }
 
         if self.match_token(&[LeftBrace]) {
-            return Ok(Stmt::BlockStmt(BlockStmt {
+            return Ok(Statement::Block {
                 statements: self.block()?,
-            }));
+            });
         }
 
         self.expression_statement()
     }
 
-    fn while_statement(&mut self) -> LoxResult<Stmt> {
+    fn while_statement(&mut self) -> LoxResult<Statement> {
         self.consume(LeftParen, "Expect '(' after 'while'")?;
         let condition = self.expression()?;
         self.consume(RightParen, "Expect ')' after condition")?;
-        let body = Box::new(self.statement()?);
 
-        Ok(Stmt::WhileStmt(WhileStmt { condition, body }))
+        return Ok(Statement::While {
+            condition,
+            body: Box::new(self.statement()?),
+        });
     }
 
-    fn for_statement(&mut self) -> LoxResult<Stmt> {
+    fn for_statement(&mut self) -> LoxResult<Statement> {
         self.consume(LeftParen, "Expect '(' after 'for'")?;
         let initializer;
         if self.match_token(&[Semicolon]) {
@@ -124,37 +123,36 @@ impl<'a> Parser<'a> {
         if !self.check(&RightParen) {
             increment = Some(self.expression()?);
         }
-        dbg!(&increment);
         self.consume(RightParen, "Expect ')' after for clauses")?;
 
         let mut body = self.statement()?;
 
         if let Some(increment) = increment {
-            body = Stmt::BlockStmt(BlockStmt {
+            body = Statement::Block {
                 statements: vec![
                     body,
-                    Stmt::ExpressionStmt(ExpressionStmt {
+                    Statement::Expression {
                         expression: increment,
-                    }),
+                    },
                 ],
-            });
+            }
         }
 
         if let Some(condition) = condition {
-            body = Stmt::WhileStmt(WhileStmt {
+            body = Statement::While {
                 condition,
                 body: Box::new(body),
-            });
+            };
             if let Some(initializer) = initializer {
-                body = Stmt::BlockStmt(BlockStmt {
+                body = Statement::Block {
                     statements: vec![initializer, body],
-                });
+                };
             }
         }
         Ok(body)
     }
 
-    fn if_statment(&mut self) -> LoxResult<Stmt> {
+    fn if_statment(&mut self) -> LoxResult<Statement> {
         self.consume(LeftParen, "Expect '(' after 'if' ")?;
         let condition = self.expression()?;
         self.consume(RightParen, "Expect ')' after if condition.")?;
@@ -163,17 +161,17 @@ impl<'a> Parser<'a> {
         let mut else_branch = None;
 
         if self.match_token(&[Else]) {
-            else_branch = Some(Box::new(self.statement()?));
+            else_branch = Some(self.statement()?);
         }
 
-        Ok(Stmt::IfStmt(IfStmt {
+        Ok(Statement::If {
             condition,
             then_branch,
-            else_branch,
-        }))
+            else_branch: Box::new(else_branch),
+        })
     }
 
-    fn block(&mut self) -> LoxResult<Vec<Stmt>> {
+    fn block(&mut self) -> LoxResult<Vec<Statement>> {
         let mut statements = vec![];
 
         while !self.check(&RightBrace) && !self.is_at_end() {
@@ -185,18 +183,18 @@ impl<'a> Parser<'a> {
         Ok(statements)
     }
 
-    fn expression_statement(&mut self) -> LoxResult<Stmt> {
+    fn expression_statement(&mut self) -> LoxResult<Statement> {
         let expr = self.expression()?;
         self.consume(Semicolon, "Expect ';' after value.")?;
-        Ok(Stmt::ExpressionStmt(ExpressionStmt { expression: expr }))
+        Ok(Statement::Expression { expression: expr })
     }
 
-    fn print_statement(&mut self) -> LoxResult<Stmt> {
+    fn print_statement(&mut self) -> LoxResult<Statement> {
         let expr = self.expression()?;
-        Ok(Stmt::PrintStmt(PrintStmt { expression: expr }))
+        Ok(Statement::Print { expression: expr })
     }
 
-    pub fn parse(&mut self) -> LoxResult<Vec<Stmt>> {
+    pub fn parse(&mut self) -> LoxResult<Vec<Statement>> {
         let mut statements = vec![];
         while !self.is_at_end() {
             statements.push(self.declaration()?)
@@ -204,14 +202,14 @@ impl<'a> Parser<'a> {
         Ok(statements)
     }
 
-    fn declaration(&mut self) -> LoxResult<Stmt> {
+    fn declaration(&mut self) -> LoxResult<Statement> {
         if self.match_token(&[Var]) {
             return self.var_declaration();
         }
         self.statement()
     }
 
-    fn var_declaration(&mut self) -> LoxResult<Stmt> {
+    fn var_declaration(&mut self) -> LoxResult<Statement> {
         let name = self.consume(Identifier, "Expect variable name")?.clone();
         let mut initializer = None;
 
@@ -219,7 +217,7 @@ impl<'a> Parser<'a> {
             initializer = Some(self.expression()?);
         }
 
-        Ok(Stmt::VarStmt(VarStmt { initializer, name }))
+        Ok(Statement::Var { name, initializer })
     }
 
     fn peek(&self) -> &Token {
@@ -239,12 +237,12 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl<'a> ParseExpr for Parser<'a> {
-    fn expression(&mut self) -> LoxResult<Expr> {
+impl<'a> ParseExpression for Parser<'a> {
+    fn expression(&mut self) -> LoxResult<Expression> {
         self.assignment()
     }
 
-    fn assignment(&mut self) -> LoxResult<Expr> {
+    fn assignment(&mut self) -> LoxResult<Expression> {
         let expr = self.or()?;
 
         if self.match_token(&[Equal]) {
@@ -252,12 +250,13 @@ impl<'a> ParseExpr for Parser<'a> {
             let value = self.assignment()?;
 
             match expr {
-                Expr::Variable(Variable { name }) => {
-                    return Ok(Expr::Assign(Assign {
+                Expression::Variable { name } => {
+                    return Ok(Expression::Assign {
                         name,
                         value: Box::new(value),
-                    }));
+                    })
                 }
+
                 _ => return Err(self.error(&equals, "Invalid assignment target")),
             }
         }
@@ -265,87 +264,89 @@ impl<'a> ParseExpr for Parser<'a> {
         Ok(expr)
     }
 
-    fn or(&mut self) -> LoxResult<Expr> {
+    fn or(&mut self) -> LoxResult<Expression> {
         let mut expr = self.and()?;
 
         while self.match_token(&[Or]) {
             let operator = self.previous().to_owned();
             let right = self.and()?;
-            expr = Expr::Logical(Logical {
+            expr = Expression::Logical {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-            });
+            }
         }
 
         Ok(expr)
     }
 
-    fn and(&mut self) -> LoxResult<Expr> {
+    fn and(&mut self) -> LoxResult<Expression> {
         let mut expr = self.equality()?;
 
         while self.match_token(&[And]) {
             let operator = self.previous().to_owned();
             let right = self.equality()?;
-            expr = Expr::Logical(Logical {
+            expr = Expression::Logical {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-            });
+            }
         }
 
         Ok(expr)
     }
 
-    fn primary(&mut self) -> LoxResult<Expr> {
+    fn primary(&mut self) -> LoxResult<Expression> {
         if self.match_token(&[False]) {
-            return Ok(Expr::Literal(Literal {
+            return Ok(Expression::Literal {
                 value: Some(Value::Boolean(false)),
-            }));
+            });
         }
         if self.match_token(&[True]) {
-            return Ok(Expr::Literal(Literal {
+            return Ok(Expression::Literal {
                 value: Some(Value::Boolean(true)),
-            }));
+            });
         }
         if self.match_token(&[Nil]) {
-            return Ok(Expr::Literal(Literal {
+            return Ok(Expression::Literal {
                 value: Some(Value::Nil),
-            }));
+            });
         }
         if self.match_token(&[Number, TokenType::String]) {
-            return Ok(Expr::Literal(Literal {
-                value: self.previous().literal.to_owned(),
-            }));
+            let literal = &self.previous().literal;
+            return Ok(Expression::Literal {
+                value: literal.clone(),
+            });
         }
         if self.match_token(&[LeftParen]) {
-            let expr = self.expression()?;
+            let expression = self.expression()?;
             self.consume(RightParen, "Expect ')' after expression")?;
-            return Ok(Expr::Grouping(Grouping {
-                expression: Box::new(expr),
-            }));
+            return Ok(Expression::Grouping {
+                expression: Box::new(expression),
+            });
         }
 
         if self.match_token(&[Identifier]) {
             let identifier = self.previous().to_owned();
+            dbg!(&identifier);
             if self.match_token(&[PostIncrement]) {
-                return Ok(Expr::Assign(Assign {
+                return Ok(Expression::Assign {
                     name: identifier.clone(),
-                    value: Box::new(Expr::Binary(Binary {
-                        left: Box::new(Expr::Variable(Variable { name: identifier })),
+                    value: Box::new(Expression::Binary {
+                        left: Box::new(Expression::Variable { name: identifier }),
                         operator: Token {
                             type_: Plus,
                             lexeme: "+".into(),
                             literal: None,
                             line: self.previous().line,
                         },
-                        right: Box::new(Expr::Literal(Literal {
+                        right: Box::new(Expression::Literal {
                             value: Some(Value::Number(1.0)),
-                        })),
-                    })),
-                }));
+                        }),
+                    }),
+                });
             }
-            return Ok(Expr::Variable(Variable { name: identifier }));
+            return Ok(Expression::Variable { name: identifier });
         } else {
             Err(LoxErrors::ParseError(Error::new(
                 self.previous().line,
@@ -354,23 +355,23 @@ impl<'a> ParseExpr for Parser<'a> {
         }
     }
 
-    fn equality(&mut self) -> LoxResult<Expr> {
+    fn equality(&mut self) -> LoxResult<Expression> {
         let mut expr = self.comparison()?;
 
         while self.match_token(&[BangEqual, EqualEqual]) {
             let operator = self.previous().to_owned();
             let right = self.comparison()?;
-            expr = Expr::Binary(Binary {
+            expr = Expression::Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-            })
+            }
         }
 
         Ok(expr)
     }
 
-    fn comparison(&mut self) -> LoxResult<Expr> {
+    fn comparison(&mut self) -> LoxResult<Expression> {
         let mut expr = self.term()?;
 
         while self.match_token(&[
@@ -382,58 +383,57 @@ impl<'a> ParseExpr for Parser<'a> {
             let operator = self.previous().to_owned();
             let right = self.term()?;
 
-            expr = Expr::Binary(Binary {
+            expr = Expression::Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-            })
+            }
         }
 
         Ok(expr)
     }
 
-    fn term(&mut self) -> LoxResult<Expr> {
+    fn term(&mut self) -> LoxResult<Expression> {
         let mut expr = self.factor()?;
 
         while self.match_token(&[Minus, Plus]) {
             let operator = self.previous().to_owned();
-            let right = Box::new(self.factor()?);
-            expr = Expr::Binary(Binary {
+            let right = self.factor()?;
+            expr = Expression::Binary {
                 left: Box::new(expr),
                 operator,
-                right,
-            })
+                right: Box::new(right),
+            }
         }
 
         Ok(expr)
     }
 
-    fn factor(&mut self) -> LoxResult<Expr> {
+    fn factor(&mut self) -> LoxResult<Expression> {
         let mut expr = self.unary()?;
 
         while self.match_token(&[Slash, Star]) {
             let operator = self.previous().to_owned();
             let right = self.unary()?;
 
-            expr = Expr::Binary(Binary {
+            expr = Expression::Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
-            })
+            }
         }
 
         Ok(expr)
     }
 
-    fn unary(&mut self) -> LoxResult<Expr> {
+    fn unary(&mut self) -> LoxResult<Expression> {
         if self.match_token(&[Bang, Minus]) {
             let operator = self.previous().to_owned();
             let right = self.unary()?;
-
-            return Ok(Expr::Unary(Unary {
+            return Ok(Expression::Unary {
                 operator,
                 right: Box::new(right),
-            }));
+            });
         }
 
         self.primary()
